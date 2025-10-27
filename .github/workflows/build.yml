@@ -1,0 +1,62 @@
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches: ["blue", "green"]
+  pull_request:
+    branches: ["blue", "green"]
+
+env:
+  PROJECT_ID: ce-week-1
+  GKE_CLUSTER: pcc-week3
+  GKE_ZONE: europe-west4
+  REGISTRY: europe-west4-docker.pkg.dev
+  REPOSITORY: ce-week-1/pcc-week3
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v1"
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGISTRY }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+
+      - name: Build and Push Image
+        run: |
+          # Get version directly from branch name (blue or green)
+          VERSION=${GITHUB_REF#refs/heads/}
+
+          # Build and tag the image
+          docker build -t "${{ env.REGISTRY }}/${{ env.REPOSITORY }}/nginx:${VERSION}" .
+
+          # Push the image
+          docker push "${{ env.REGISTRY }}/${{ env.REPOSITORY }}/nginx:${VERSION}"
+
+      - name: Deploy to GKE
+        run: |
+          VERSION=${GITHUB_REF#refs/heads/}
+          if [ "$VERSION" = "blue" ]; then
+            kubectl apply -f deployment.yaml
+          else
+            kubectl apply -f deployment-week3-green
+          fi
