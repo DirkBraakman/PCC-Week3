@@ -56,7 +56,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/heads/}
           if [ "$VERSION" = "blue" ]; then
-            kubectl apply -f deployment.yaml
+            kubectl apply -f deployment-blue.yml
           else
-            kubectl apply -f deployment-week3-green
+            kubectl apply -f deployment-green.yml
           fi
