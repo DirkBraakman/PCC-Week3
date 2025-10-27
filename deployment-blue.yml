@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pcc-nginx-blue
+spec:
+  replicas: 2 # Number of instances (pods) to run
+  selector:
+    matchLabels:
+      app: pcc-nginx
+      version: blue
+  # everything under template is the definition of the pod that will be created.
+  template:
+    metadata:
+      labels:
+        app: pcc-nginx
+        version: blue
+    spec:
+      containers:
+        - name: pcc-nginx
+          # Image stored in Google Artifact Registry
+          image: europe-west4-docker.pkg.dev/ce-week-1/pcc-week3/nginx:blue
+          ports:
+            - containerPort: 80
